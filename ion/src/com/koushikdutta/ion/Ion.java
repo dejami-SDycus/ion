@@ -175,7 +175,7 @@ public class Ion {
         storeCache = new FileCache(new File(context.getFilesDir(), name), Long.MAX_VALUE, false);
 
         // TODO: Support pre GB?
-        if (Build.VERSION.SDK_INT >= 9)
+//        if (Build.VERSION.SDK_INT >= 9)
             addCookieMiddleware();
 
         httpClient.getSocketMiddleware().setConnectAllAddresses(true);
@@ -265,6 +265,18 @@ public class Ion {
         }
     };
 
+    private static Comparator<DeferredLoadBitmap> DEFERRED_COMPARATOR_REVERSED = new Comparator<DeferredLoadBitmap>() {
+        @Override
+        public int compare(DeferredLoadBitmap lhs, DeferredLoadBitmap rhs) {
+            // higher is least recent
+            if (lhs.priority == rhs.priority)
+                return 0;
+            if (lhs.priority > rhs.priority)
+                return 1;
+            return -1;
+        }
+    };
+
     private Runnable processDeferred = new Runnable() {
         @Override
         public void run() {
@@ -284,7 +296,7 @@ public class Ion {
             if (deferred == null)
                 return;
             int count = 0;
-            Collections.sort(deferred, DEFERRED_COMPARATOR);
+            Collections.sort(deferred, configure().isReversePriority() ? DEFERRED_COMPARATOR_REVERSED :  DEFERRED_COMPARATOR);
             for (DeferredLoadBitmap deferredLoadBitmap: deferred) {
                 bitmapsPending.tag(deferredLoadBitmap.key, null);
                 bitmapsPending.tag(deferredLoadBitmap.fetcher.bitmapKey, null);
@@ -596,6 +608,18 @@ public class Ion {
         public List<Loader> getLoaders() {
             return loaders;
         }
+        
+        boolean reversePriority = false;
+
+		public boolean isReversePriority() {
+			return reversePriority;
+		}
+
+		public void setReversePriority(boolean reversePriority) {
+			this.reversePriority = reversePriority;
+		}
+        
+        
     }
 
     public Config configure() {
